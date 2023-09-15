@@ -1,6 +1,6 @@
-# first install python
-# 2nd install selenium
-# 3rd install openpyxl
+# first install python    https://www.python.org/
+# 2nd install selenium    pip install selenium
+# 3rd install openpyxl    pip install openpyxl  
 
 # and then run it
 
