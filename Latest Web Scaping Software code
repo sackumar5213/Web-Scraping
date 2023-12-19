@@ -1,0 +1,179 @@
+# first install python    https://www.python.org/
+# 2nd install selenium    pip install selenium
+# 3rd install openpyxl    pip install openpyxl  
+
+# and then run it
+
+import time
+import selenium
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from openpyxl import Workbook 
+from selenium.common.exceptions import NoSuchElementException  # for if element not found
+import sys
+
+
+wb = Workbook()  
+sheet = wb.active  
+
+driver=webdriver.Chrome()
+
+def Login():
+    driver.find_element(By.XPATH,"/html/body/header/nav/div[2]/ul/li[2]/a").click()
+    driver.find_element(By.XPATH,"/html/body/section[2]/div/div[1]/div[2]/form/div[1]/input").send_keys("001976rakesh@gmail.com")
+    driver.find_element(By.XPATH,"/html/body/section[2]/div/div[1]/div[2]/form/div[2]/input").send_keys("Rakesh@152")
+    driver.find_element(By.XPATH,"/html/body/section[2]/div/div[1]/div[2]/form/div[3]/button").click()
+    # time.sleep(3)
+
+
+
+
+url="https://findauction.in/"
+driver.get(url)
+
+
+# Log In
+Login()
+time.sleep(1)
+
+# # # Enter place and bank
+place="Ghaziabad"
+bank="Punjab National Bank"
+
+from_date="2023-12-19&todate=2023-12-20" # enter in yyyy-mm-dd format
+
+
+
+last_record=7
+# int(sys.argv[1])  #Enter number of Records (not more than 15)
+last_page=1
+# int(sys.argv[2])    # Enter number of pages
+
+# click on SEARCH Button in Navigation bar 
+driver.find_element(By.XPATH,"/html/body/header/nav/div[3]/ul/li[2]/a").click()
+time.sleep(2)
+
+# storing place name in filter form
+driver.find_element(By.XPATH,"/html/body/section/div/div/div[2]/form/div[1]/div/input").send_keys(place)
+
+# storing bank name in filter form
+driver.find_element(By.XPATH,"/html/body/section/div/div/div[2]/form/div[2]/div[1]/input[1]").send_keys(bank)
+
+# choosing date of auction \\ ismai abhi date ka XML enter karna hai
+# driver.find_element(By.XPATH,"/html/body/section/div/div/div[2]/form/div[1]/div/input").send_keys(place)
+
+#chosing physical or symbolic possession
+driver.find_element(By.XPATH,"//*[@id='symbolic_possession']").click()
+# for Physical : //*[@id='physical_possession']
+# for Symbolic : //*[@id="symbolic_possession"]
+
+
+# clicking on SEARCH Button to make list
+driver.find_element(By.XPATH,"/html/body/section/div/div/div[2]/form/div[6]/div/input[5]").click()
+# time.sleep(10)
+
+
+
+
+
+# Entering the headers in excel in top of the data
+names = ["Sr. No.", "Bank", "Borrower","Type","Short Add","Address","Area", "Locality", "City","Status","Reserve Price", "Auction", "Auth Contact", "Links"]
+sheet.append(names)
+
+# extracting Current link to add parameter of pages
+new_url = driver.current_url
+gen_url = new_url + "&fromdate="+from_date+"&sort=sortby%3Anewest&page=" #for storing next url with all 
+
+# you can change the date of auction in the gen_url link
+
+empty_row=1
+# Going into deeper details of property
+for page in range(1,last_page+1):
+    driver.get(gen_url+str(page))
+
+    
+    for i in range(2,last_record+2):  #each page contains 15 records. Hence 2 to 17
+        print("i=  ",i-1)
+        try:
+            auction_date =driver.find_element(By.XPATH,"/html/body/section/div/div/div[4]/div["+str(i)+"]/div/div/div/div/ul/li[1]").text
+        except NoSuchElementException:
+            auction_date="NA"
+        try:
+            area=driver.find_element(By.XPATH,"/html/body/section/div/div/div[4]/div["+str(i)+"]/div/div/div/div/ul/li[2]").text
+        except NoSuchElementException:
+            area="NA"
+        try:
+            status=driver.find_element(By.XPATH,"/html/body/section/div/div/div[4]/div["+str(i)+"]/div/div/div/div/ul/li[3]").text
+        except NoSuchElementException:
+            status="NA"
+
+        # storing the short description of the property like location
+        short_add=driver.find_element(By.XPATH,"/html/body/section/div/div/div[4]/div["+str(i)+"]/div/div/div/div/div[1]/h5/a").text
+
+        # # going inner for storing detailed data of property
+        reserve_price=driver.find_element(By.XPATH,"/html/body/section/div/div/div[4]/div["+str(i)+"]/div/div/div/div/div[1]/h6").text
+        driver.find_element(By.XPATH,"/html/body/section/div/div/div[4]/div["+str(i)+"]/div/div/div/div/div[2]/a").click()
+        links=driver.current_url
+        time.sleep(1.5)
+
+        # #storing data of property
+        borrower=driver.find_element(By.XPATH,"/html/body/section[2]/div[2]/div/div[1]/div[4]/div[2]/dl[1]/dd").text
+        bank_name=driver.find_element(By.XPATH,"/html/body/section[2]/div[2]/div/div[1]/div[4]/div[2]/dl[2]/dd/a").text
+        property_type=driver.find_element(By.XPATH,"/html/body/section[2]/div[2]/div/div[1]/div[4]/div[2]/dl[3]/dd").text
+        location=driver.find_element(By.XPATH,"/html/body/section[2]/div[2]/div/div[1]/div[4]/div[2]/dl[4]/dd").text
+
+        for contact_loop in range(5,20):
+            try:
+                district=driver.find_element(By.XPATH,"/html/body/section[2]/div[2]/div/div[1]/div[4]/div[2]/dl["+str(contact_loop)+"]/dt").text
+            except NoSuchElementException:
+                district="NA"
+            if(district=="Locality"):
+                district=driver.find_element(By.XPATH,"/html/body/section[2]/div[2]/div/div[1]/div[4]/div[2]/dl["+str(contact_loop)+"]/dd").text
+                break
+        
+        for contact_loop in range(5,20):
+            try:
+                town=driver.find_element(By.XPATH,"/html/body/section[2]/div[2]/div/div[1]/div[4]/div[2]/dl["+str(contact_loop)+"]/dt").text
+            except NoSuchElementException:
+                city="NA"
+            if(town=="City"):
+                city=driver.find_element(By.XPATH,"/html/body/section[2]/div[2]/div/div[1]/div[4]/div[2]/dl["+str(contact_loop)+"]/dd").text
+                break
+
+        # city=driver.find_element(By.XPATH,"/html/body/section[2]/div[2]/div/div[1]/div[4]/div[2]/dl["+str(contact_loop+1)+"]/dd").text
+
+
+        for contact_loop in range(5,20):
+            try:
+                contact=driver.find_element(By.XPATH,"/html/body/section[2]/div[2]/div/div[1]/div[4]/div[2]/dl["+str(contact_loop)+"]/dt").text
+            except NoSuchElementException:
+                pass
+            if(contact=="Contact Details for Support"):
+                authorized_details=driver.find_element(By.XPATH,"/html/body/section[2]/div[2]/div/div[1]/div[4]/div[2]/dl["+str(contact_loop)+"]/dd").text
+                break
+
+        # data entry into sheet
+        empty_row=empty_row+1
+        sheet['A'+str(empty_row)]=empty_row-1
+        sheet['B'+str(empty_row)]=bank_name
+        sheet['C'+str(empty_row)]=borrower
+        sheet['D'+str(empty_row)]=property_type
+        sheet['E'+str(empty_row)]=short_add
+        sheet['F'+str(empty_row)]=location
+        sheet['G'+str(empty_row)]=area   
+        sheet['H'+str(empty_row)]=city
+        sheet['I'+str(empty_row)]=district
+        sheet['J'+str(empty_row)]= status
+        sheet['K'+str(empty_row)]= reserve_price
+        sheet['L'+str(empty_row)]=auction_date 
+        sheet['M'+str(empty_row)]=authorized_details
+        sheet['N'+str(empty_row)]=links
+        print("Empty row= ", empty_row)
+
+        driver.back()
+        ######################################
+    # empty_row=empty_row+1
+
+
+wb.save(place+" ("+bank+")____Sale_entry.xlsx")
+time.sleep(2)
